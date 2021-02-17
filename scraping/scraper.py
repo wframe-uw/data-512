@@ -11,6 +11,7 @@ class scraper():
         self.url_stats = "https://finance.yahoo.com/quote/{}/key-statistics?p={}".format(self.ticker, self.ticker)
         self.url_stats = "https://finance.yahoo.com/quote/{}/profile?p={}".format(self.ticker, self.ticker)
         self.url_financials = "https://finance.yahoo.com/quote/{}/financials?p={}".format(self.ticker, self.ticker)
+        self.financials_dict = {}
 
     def get_data(self, url):
         page = requests.get(url)
@@ -22,3 +23,11 @@ class scraper():
         json_data = json.loads(script_data[start_pos: end_pos])
         data = json_data['context']['dispatcher']['stores']['QuoteSummaryStore']
         return data
+
+    def add_to_data_dict(self, dict):
+        for key, val in dict.items():
+            try:
+                self.financials_dict[key] = val['fmt']
+            except (KeyError, TypeError):
+                continue
+
