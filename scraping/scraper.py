@@ -13,6 +13,7 @@ class scraper():
         # self.url_financials = "https://finance.yahoo.com/quote/{}/financials?p={}".format(self.ticker, self.ticker)
         self.financials_dict = {}
         self.profile_dict = {}
+        self.sec_filing_list = []
 
     def parse_url(self, url):
         page = requests.get(url)
@@ -41,23 +42,38 @@ class scraper():
     def get_profile(self):
         profile_data = self.parse_url(self.url_profile)
         self.scrape_company_description(profile_data)
-        self.scrape_sec_filling()
+        self.scrape_sec_filling(profile_data)
 
     def scrape_company_description(self, profile_data):
         asset_profile = profile_data['assetProfile']
-        fields_to_include = ['sector', 'industry', "longBusinessSummary"]
-        for field in fields_to_include:
-            self.profile_dict[field] = asset_profile.get(field, 'N/A')
+        profile_fields_to_include = ['sector', 'industry', "longBusinessSummary"]
+        for field in profile_fields_to_include:
+            self.profile_dict[field] = asset_profile.get(field)
 
-    def scrape_sec_filling(self):
-        pass
+    def scrape_sec_filling(self, profile_data):
+        try:
+            sec_filings = profile_data['secFilings']['filings']
+            n = min(3, len(sec_filings))
+            sec_fields_to_include = ['date', 'type', 'title', 'edgarUrl']
+            if sec_filings:
+                for i in range(n):
+                    temp_filing_dict = {}
+                    for field in sec_fields_to_include:
+                        temp_filing_dict[field] = sec_filings[i].get(field)
+                    self.sec_filing_list.append(temp_filing_dict)
+        except (KeyError, TypeError):
+            pass
 
     def scrape_all_data(self):
         self.get_key_stats()
         self.get_profile()
-        return {'profile' : self.profile_dict, 'financials' : self.financials_dict}
+        return {'profile': self.profile_dict, 'financials': self.financials_dict, 'sec_filings': self.sec_filing_list}
+
 
 if __name__ == "__main__":
-    s = scraper('AAPL')
+    s = scraper('ECL')
     data = s.scrape_all_data()
-    print(data)
+    print(data["profile"])
+    print(data["financials"])
+    print(len(data["financials"]))
+    print(data['sec_filings'])
