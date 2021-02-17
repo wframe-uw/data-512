@@ -14,6 +14,7 @@ page = requests.get(url)
 soup = BeautifulSoup(page.text, 'lxml')
 pattern = re.compile(r'\s--\sData\s--\s')
 script_data = soup.find('script', text=pattern).contents[0]
+
 # print(script_data)
 start_pos = script_data.find("context") - 2
 end_pos = -12
