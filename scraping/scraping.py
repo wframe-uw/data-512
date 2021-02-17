@@ -21,14 +21,13 @@ json_data = json.loads(script_data[start_pos : end_pos])
 profile_data = json_data['context']['dispatcher']['stores']['QuoteSummaryStore']
 summary_data = profile_data['summaryDetail']
 
+
 summary_stats = {}
 
 for key, val in summary_data.items():
     try:
         summary_stats[key] = val['fmt']
-    except KeyError:
-        continue
-    except TypeError:
+    except (KeyError, TypeError):
         continue
 
 print(summary_stats)
