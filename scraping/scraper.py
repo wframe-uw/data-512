@@ -1,23 +1,23 @@
 from bs4 import BeautifulSoup
 import re
 import json
-import requests
+from scraping.clients import Requester
+from scraping.constants import *
 
-
-class scraper():
-
-    def __init__(self, ticker):
+class Scraper:
+    def __init__(self, ticker, requester=Requester()):
         self.ticker = ticker.upper()
-        self.url_stats = "https://finance.yahoo.com/quote/{}/key-statistics?p={}".format(self.ticker, self.ticker)
-        self.url_profile = "https://finance.yahoo.com/quote/{}/profile?p={}".format(self.ticker, self.ticker)
-        # self.url_financials = "https://finance.yahoo.com/quote/{}/financials?p={}".format(self.ticker, self.ticker)
+        self.requester = requester
+        self.url_stats = URL_KEY_STATISTICS.format(self.ticker, self.ticker)
+        self.url_profile = URL_PROFILE.format(self.ticker, self.ticker)
+        # self.url_financials = URL_FINANCIALS.format(self.ticker, self.ticker)
         self.financials_dict = {}
         self.profile_dict = {}
         self.sec_filing_list = []
 
     def parse_url(self, url):
-        page = requests.get(url)
-        soup = BeautifulSoup(page.text, 'lxml')
+        text = self.requester.get_page_text(url)
+        soup = BeautifulSoup(text, 'lxml')
         pattern = re.compile(r'\s--\sData\s--\s')
         script_data = soup.find('script', text=pattern).contents[0]
         start_pos = script_data.find("context") - 2
@@ -33,13 +33,13 @@ class scraper():
             except (KeyError, TypeError):
                 continue
 
-    def get_key_stats(self):
+    def add_key_stats_to_dict(self):
         stats_data = self.parse_url(self.url_stats)
         tables_to_scrape = ['financialData', 'summaryDetail', 'defaultKeyStatistics', 'price', 'calendarEvents']
         for table in tables_to_scrape:
             self.add_to_data_dict(stats_data[table])
 
-    def get_profile(self):
+    def add_profile_to_dict(self):
         profile_data = self.parse_url(self.url_profile)
         self.scrape_company_description(profile_data)
         self.scrape_sec_filling(profile_data)
@@ -65,13 +65,13 @@ class scraper():
             pass
 
     def scrape_all_data(self):
-        self.get_key_stats()
-        self.get_profile()
+        self.add_key_stats_to_dict()
+        self.add_profile_to_dict()
         return {'profile': self.profile_dict, 'financials': self.financials_dict, 'sec_filings': self.sec_filing_list}
 
 
 if __name__ == "__main__":
-    s = scraper('ECL')
+    s = Scraper('ECL')
     data = s.scrape_all_data()
     print(data["profile"])
     print(data["financials"])
